@@ -1,0 +1,7 @@
+.DS_Store
+
+# GitHub rejects files larger than 100 MB. The bundled quantized model remains tracked.
+models/kokoro/onnx/model.onnx
+models/kokoro/onnx/model_quantized.onnx
+vendor/onnxruntime-web/*.wasm
+models/kokoro/voices/*.bin
