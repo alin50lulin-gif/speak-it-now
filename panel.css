@@ -718,6 +718,23 @@ html:has(.panel) body {
   border-radius: var(--radius-md);
 }
 
+.site-disable-btn {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  color: #ffd6d6;
+  text-align: left;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.32);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.site-disable-btn strong, .site-disable-btn small { display: block; }
+.site-disable-btn strong { font-size: 13px; }
+.site-disable-btn small { margin-top: 3px; color: var(--text-muted); font-size: 11px; }
+.site-disable-btn.is-disabled { color: #baf7ed; background: rgba(53, 182, 162, 0.12); border-color: rgba(53, 182, 162, 0.38); }
+
 .settings-toggle + .settings-toggle {
   margin-top: 8px;
 }

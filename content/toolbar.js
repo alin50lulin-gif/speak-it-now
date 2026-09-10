@@ -157,6 +157,7 @@
   let selectionPopupEnabled = true;
   let floatingDockEnabled = true;
   let wordHighlightEnabled = true;
+  let siteDisabled = false;
   let highlightedElement = null;
   let hoveredReadItem = null;
   let lastHoveredReadItem = null;
@@ -627,6 +628,16 @@
 
   function applyFeatureVisibility() {
     if (!ui) return;
+    host.style.display = siteDisabled ? "none" : "";
+    if (siteDisabled) {
+      hoveredReadItem?.element?.classList.remove(HOVER_READER_CLASS);
+      hoveredReadItem = null;
+      lastHoveredReadItem = null;
+      releaseSelectionAudio();
+      releasePageAudio();
+      clearWordHighlight();
+      return;
+    }
     if (ui.dock) {
       ui.dock.hidden = !floatingDockEnabled;
       if (!floatingDockEnabled) {
@@ -1258,6 +1269,8 @@
     selectionPopupEnabled = stored.selectionPopupEnabled !== false;
     floatingDockEnabled = stored.floatingDockEnabled !== false;
     wordHighlightEnabled = stored.wordHighlightEnabled !== false;
+    const siteKey = location.hostname || location.origin;
+    siteDisabled = Array.isArray(stored.disabledSites) && stored.disabledSites.includes(siteKey);
     if (!wordHighlightEnabled) clearWordHighlight();
     speechProvider = normalizeSpeechProvider(stored.speechProvider);
     if (PLAYBACK_SPEEDS.includes(stored.playbackSpeed)) {
@@ -2075,6 +2088,7 @@
   }
 
   function handleSelectionUpdate() {
+    if (siteDisabled) return;
     ensurePageHighlightStyles();
     requestAnimationFrame(() => {
       const snapshot = getSelectionSnapshot();
@@ -2096,7 +2110,7 @@
   document.addEventListener("keyup", handleSelectionUpdate);
   document.addEventListener("pointerdown", handleOutsideDockPointerDown, true);
   document.addEventListener("mouseover", (event) => {
-    if (pagePlayer.active || event.target === host || host?.contains(event.target)) return;
+    if (siteDisabled || pagePlayer.active || event.target === host || host?.contains(event.target)) return;
     const element = event.target?.closest?.("p, li, blockquote, figcaption, summary, dd, dt, td, th");
     if (element) setHoveredReadItem(element);
   }, true);
@@ -2133,6 +2147,11 @@
       if (changes.wordHighlightEnabled) {
         wordHighlightEnabled = changes.wordHighlightEnabled.newValue !== false;
         if (!wordHighlightEnabled) clearWordHighlight();
+      }
+      if (changes.disabledSites) {
+        const siteKey = location.hostname || location.origin;
+        siteDisabled = Array.isArray(changes.disabledSites.newValue) && changes.disabledSites.newValue.includes(siteKey);
+        applyFeatureVisibility();
       }
       if (changes.elevenLabsVoiceId && ui.voiceSelect) {
         ui.voiceSelect.value = changes.elevenLabsVoiceId.newValue ?? VOICES[0].id;

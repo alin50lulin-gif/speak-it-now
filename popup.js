@@ -40,6 +40,8 @@ const speechProviderSelect = document.getElementById("speech-provider");
 const selectionPopupEnabledInput = document.getElementById("selection-popup-enabled");
 const floatingDockEnabledInput = document.getElementById("floating-dock-enabled");
 const wordHighlightEnabledInput = document.getElementById("word-highlight-enabled");
+const siteDisableButton = document.getElementById("site-disable-btn");
+const siteDisableHost = document.getElementById("site-disable-host");
 const elevenLabsSection = document.getElementById("elevenlabs-section");
 const openAISection = document.getElementById("openai-section");
 const sarvamSection = document.getElementById("sarvam-section");
@@ -120,6 +122,29 @@ let savedLanguageCode = DEFAULT_LANGUAGE_CODE;
 let errorToastTimer = null;
 let smallestAIVoiceCache = null;
 let smallestAIVoiceCacheKey = "";
+let currentSiteKey = "";
+let disabledSites = [];
+
+function updateSiteDisableButton() {
+  const disabled = currentSiteKey && disabledSites.includes(currentSiteKey);
+  siteDisableButton.disabled = !currentSiteKey;
+  siteDisableButton.classList.toggle("is-disabled", disabled);
+  siteDisableButton.querySelector("strong").textContent = disabled
+    ? "Enable on this site"
+    : "Disable on this site";
+  siteDisableHost.textContent = currentSiteKey || "Unavailable on this page";
+}
+
+async function loadCurrentSite() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const url = new URL(tab?.url || "");
+    currentSiteKey = url.hostname || url.origin;
+  } catch (_err) {
+    currentSiteKey = "";
+  }
+  updateSiteDisableButton();
+}
 
 function schedulePopupResize() {
   document.documentElement.style.overflow = "hidden";
@@ -432,6 +457,8 @@ function initControls() {
 async function loadSettings() {
   const stored = await chrome.storage.local.get([...SETTINGS_KEYS, "vocabulary"]);
   renderVocabulary(Array.isArray(stored.vocabulary) ? stored.vocabulary : []);
+  disabledSites = Array.isArray(stored.disabledSites) ? stored.disabledSites : [];
+  updateSiteDisableButton();
   speechProvider = isSpeechProviderId(stored.speechProvider)
     ? stored.speechProvider
     : DEFAULT_SPEECH_PROVIDER;
@@ -543,6 +570,17 @@ form.addEventListener("submit", (event) => {
   saveSettings();
 });
 
+siteDisableButton.addEventListener("click", async () => {
+  if (!currentSiteKey) return;
+  const disabled = disabledSites.includes(currentSiteKey);
+  disabledSites = disabled
+    ? disabledSites.filter((site) => site !== currentSiteKey)
+    : [...disabledSites, currentSiteKey];
+  await chrome.storage.local.set({ disabledSites });
+  updateSiteDisableButton();
+  setStatus(disabled ? "Enabled" : "Disabled");
+});
+
 for (const button of tabButtons) {
   button.addEventListener("click", () => {
     activateTab(button.dataset.tabTarget);
@@ -625,6 +663,7 @@ if ("speechSynthesis" in window) {
 window.addEventListener("load", schedulePopupResize);
 
 initControls();
+loadCurrentSite();
 loadSettings().finally(schedulePopupResize);
 
 chrome.storage.onChanged.addListener((changes, area) => {

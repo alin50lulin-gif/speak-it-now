@@ -252,6 +252,7 @@ export const SETTINGS_KEYS = [
   "wordHighlightEnabled",
   "vocabularyApiBaseUrl",
   "vocabularyModel",
+  "disabledSites",
   "elevenLabsApiKey",
   "elevenLabsVoiceId",
   "elevenLabsModel",
